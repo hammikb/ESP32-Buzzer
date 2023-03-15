@@ -1,12 +1,11 @@
 # ESP32-S3 Buzzer Library
 
-This library allows you to control a buzzer connected to an ESP32-S3 microcontroller easily, without causing brownouts or interrupting the main code execution. The library is designed to work with the Arduino IDE.
+A non-blocking buzzer library for ESP32S3 that enables playing multiple tones with specified frequency, on/off duration, and number of cycles, without interrupting the main loop.
 
 # Features
-- Easy-to-use API for controlling a buzzer connected to an ESP32-S3 device.
-- Non-blocking operation, allowing the rest of the code to execute without interruption.
-- Adjustable parameters like frequency, duration, cycles, and cycle interval.
-- Utilizes hardware timers and LEDC peripheral to generate the desired tones.
+- Non-blocking: The library allows the main loop to continue running while playing tones.
+- Tone Queue: Queue up multiple tones to be played one after another.
+- Adjustable parameters: Set the frequency, on/off duration, and number of cycles for each tone.
 
 # Installation
 1. Download the latest release of the library as a ZIP file.
