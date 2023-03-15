@@ -1,77 +1,51 @@
 #include "ESP32S3Buzzer.h"
+#include "Arduino.h"
+#include <driver/ledc.h>
 
-ESP32S3Buzzer *self;
-
-ESP32S3Buzzer::ESP32S3Buzzer(uint8_t buzzerPin, uint8_t ledcChannel, uint8_t timerResolution, uint32_t pwmFrequency, timer_idx_t timerIndex)
-  : _buzzerPin(buzzerPin), _ledcChannel(ledcChannel), _timerResolution(timerResolution), _pwmFrequency(pwmFrequency), _timerIndex(timerIndex) {
-  self = this;
-}
+ESP32S3Buzzer::ESP32S3Buzzer(uint8_t pin, uint8_t channel)
+    : _pin(pin), _ledcChannel(channel), _timerIndex(channel), _isPlaying(false), _startTime(0), _currentDuration(0), _isToneOn(false), _currentCycle(0) {}
 
 void ESP32S3Buzzer::begin() {
-  pinMode(_buzzerPin, OUTPUT);
-  ledcSetup(_ledcChannel, _pwmFrequency, _timerResolution);
-  ledcAttachPin(_buzzerPin, _ledcChannel);
+  ledcSetup(_ledcChannel, 0, 13);
+  ledcAttachPin(_pin, _ledcChannel);
 }
 
-void ESP32S3Buzzer::tone(uint32_t frequency, uint32_t duration, uint16_t cycles, uint32_t cycleInterval) {
-  _duration = duration;
-  _cycles = cycles;
-  _cycleInterval = cycleInterval;
-
-  ledcWriteTone(_ledcChannel, frequency);
-  if (duration > 0) {
-    _isDuration = true;
-    startTimer(duration, true);
-  }
-}
-
-void ESP32S3Buzzer::noTone() {
+void ESP32S3Buzzer::end() {
+  ledcDetachPin(_pin);
   ledcWriteTone(_ledcChannel, 0);
 }
 
-void IRAM_ATTR ESP32S3Buzzer::onTimer(void* arg) {
-  timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, self->_timerIndex);
+void ESP32S3Buzzer::tone(uint32_t freq, uint32_t onDuration, uint32_t offDuration, uint16_t cycles) {
+  Tone newTone = {freq, onDuration, offDuration, cycles};
+  _toneQueue.push(newTone);
+}
 
-  if (self->_isDuration) {
-    self->noTone();
-    if (self->_cycles > 1) {
-      self->_cycles--;
-      self->_isDuration = false;
-      self->startTimer(self->_cycleInterval, false);
-    } else {
-      self->stopTimer();
+void ESP32S3Buzzer::update() {
+  if (_isPlaying) {
+    if (millis() - _startTime >= _currentDuration) {
+      if (_isToneOn) {
+        _isToneOn = false;
+        ledcWriteTone(_ledcChannel, 0);
+        _currentDuration = _toneQueue.front().offDuration;
+        _currentCycle++;
+      } else {
+        if (_currentCycle < _toneQueue.front().cycles) {
+          _isToneOn = true;
+          ledcWriteTone(_ledcChannel, _toneQueue.front().frequency);
+          _currentDuration = _toneQueue.front().onDuration;
+        } else {
+          _isPlaying = false;
+          _toneQueue.pop();
+        }
+      }
+      _startTime = millis();
     }
-  } else {
-    self->tone(1000, self->_duration, self->_cycles, self->_cycleInterval);
+  } else if (!_toneQueue.empty()) {
+    _isPlaying = true;
+    _isToneOn = true;
+    ledcWriteTone(_ledcChannel, _toneQueue.front().frequency);
+    _startTime = millis();
+    _currentDuration = _toneQueue.front().onDuration;
+    _currentCycle = 0;
   }
-}
-
-void ESP32S3Buzzer::startTimer(uint32_t interval, bool isDuration) {
-  _isDuration = isDuration;
-
-  timer_config_t config = {
-    .alarm_en = TIMER_ALARM_EN,
-    .counter_en = TIMER_PAUSE,
-    .intr_type = TIMER_INTR_LEVEL,
-    .counter_dir = TIMER_COUNT_UP,
-    .auto_reload = (timer_autoreload_t) false,
-    .divider = 80
-  };
-
-  timer_init(TIMER_GROUP_0, _timerIndex, &config);
-  timer_set_counter_value(TIMER_GROUP_0, _timerIndex, 0x00000000ULL);
-  timer_set_alarm_value(TIMER_GROUP_0, _timerIndex, interval * 1000);
-  timer_enable_intr(TIMER_GROUP_0, _timerIndex);
-  timer_isr_register(TIMER_GROUP_0, _timerIndex, onTimer, NULL, ESP_INTR_FLAG_IRAM, NULL);
-
-  timer_start(TIMER_GROUP_0, _timerIndex);
-}
-
-void ESP32S3Buzzer::stopTimer() {
-  timer_pause(TIMER_GROUP_0, _timerIndex);
-  timer_disable_intr(TIMER_GROUP_0, _timerIndex);
-}
-
-void ESP32S3Buzzer::updateTimer(uint32_t interval) {
-  timer_set_alarm_value(TIMER_GROUP_0, _timerIndex, interval * 1000);
 }

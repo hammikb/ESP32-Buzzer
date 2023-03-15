@@ -1,33 +1,35 @@
-#ifndef ESP32S3Buzzer_h
-#define ESP32S3Buzzer_h
+#ifndef ESP32S3BUZZER_H
+#define ESP32S3BUZZER_H
 
-#include <Arduino.h>
-#include <driver/timer.h>
-#include <driver/ledc.h>
+#include "Arduino.h"
+#include <queue>
 
 class ESP32S3Buzzer {
 public:
-  ESP32S3Buzzer(uint8_t buzzerPin, uint8_t ledcChannel = 0, uint8_t timerResolution = 8, uint32_t pwmFrequency = 2000, timer_idx_t timerIndex = TIMER_0);
+  ESP32S3Buzzer(uint8_t pin, uint8_t channel);
   void begin();
-  void tone(uint32_t frequency, uint32_t duration = 0, uint16_t cycles = 1, uint32_t cycleInterval = 0);
-  void noTone();
-  void updateTimer(uint32_t interval);
+  void end();
+  void tone(uint32_t freq, uint32_t onDuration, uint32_t offDuration, uint16_t cycles = 1);
+  void update();
 
 private:
-  uint8_t _buzzerPin;
+  uint8_t _pin;
   uint8_t _ledcChannel;
-  uint8_t _timerResolution;
-  uint32_t _pwmFrequency;
-  timer_idx_t _timerIndex;
+  uint8_t _timerIndex;
 
-  uint32_t _duration;
-  uint16_t _cycles;
-  uint32_t _cycleInterval;
-  bool _isDuration;
+  struct Tone {
+    uint32_t frequency;
+    uint32_t onDuration;
+    uint32_t offDuration;
+    uint16_t cycles;
+  };
 
-  static void IRAM_ATTR onTimer(void* arg);
-  void startTimer(uint32_t interval, bool isDuration);
-  void stopTimer();
+  std::queue<Tone> _toneQueue;
+  bool _isPlaying;
+  uint32_t _startTime;
+  uint32_t _currentDuration;
+  bool _isToneOn;
+  uint16_t _currentCycle;
 };
 
 #endif
