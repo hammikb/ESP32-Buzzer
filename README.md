@@ -1,6 +1,6 @@
-# ESP32-S3 Buzzer Library
+# ESP32 Buzzer Library
 
-A non-blocking buzzer library for ESP32S3 that enables playing multiple tones with specified frequency, on/off duration, and number of cycles, without interrupting the main loop.
+A non-blocking buzzer library for ESP32 that enables playing multiple tones with specified frequency, on/off duration, and number of cycles, without interrupting the main loop.
 
 # Features
 - Non-blocking: The library allows the main loop to continue running while playing tones.
