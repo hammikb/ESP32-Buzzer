@@ -49,3 +49,28 @@ buzzer.tone(frequency, duration, cycles, cycleInterval);
 ```
 buzzer.noTone();
 ```
+# Example 
+```
+#include <ESP32S3Buzzer.h>
+
+ESP32S3Buzzer buzzer1(1, 0); // Buzzer 1 connected to GPIO 1, using LEDC channel 0
+ESP32S3Buzzer buzzer2(2, 1); // Buzzer 2 connected to GPIO 2, using LEDC channel 1
+
+void setup() {
+  buzzer1.begin();
+  buzzer2.begin();
+}
+
+void loop() {
+  // Buzzer 1: Play a 1000 Hz tone for 500 ms, repeat 3 times with a 200 ms interval between cycles
+  buzzer1.tone(1000, 500, 3, 200);
+  
+  delay(2000); // Wait for 2 seconds
+
+  // Buzzer 2: Play a 1500 Hz tone for 300 ms, repeat 2 times with a 100 ms interval between cycles
+  buzzer2.tone(1500, 300, 2, 100);
+
+  delay(5000); // Wait for 5 seconds
+}
+```
+In this example, two buzzers are connected to GPIO 1 and GPIO 2, using LEDC channels 0 and 1, respectively. Buzzer 1 plays a 1000 Hz tone for 500 ms, repeating it 3 times with a 200 ms interval between cycles. After a 2-second delay, Buzzer 2 plays a 1500 Hz tone for 300 ms, repeating it 2 times with a 100 ms interval between cycles. The sequence then waits for 5 seconds before starting again.
